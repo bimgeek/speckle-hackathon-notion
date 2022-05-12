@@ -77,7 +77,9 @@ with input:
 #Query code for receiving comments
 query = gql(
     """
-    query{comments(streamId:"1a3d717f57") {
+    query{comments(streamId:\""""
+    + stream.id + 
+    """\") {
     items {
     id
     authorId
