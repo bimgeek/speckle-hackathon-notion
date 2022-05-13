@@ -189,14 +189,34 @@ def createPage(databaseId, headers, comment_info):
         "database_id": databaseId
         },
         "properties": {
+            "Author Id": {
+                "id": "%3Dazv",
+                "type": "rich_text",
+                "rich_text": []
+            },
+            "Id": {
+                "id": "Ker%7B",
+                "type": "rich_text",
+                "rich_text": []
+            },
             "Status": {
-                "id": "_o%3Df",
+                "id": "VlA%5B",
                 "type": "select",
                 "select": {
                     "id": "1",
                     "name": "Not started",
                     "color": "red"
                 }
+            },
+            "Camera Position": {
+                "id": "xd%3C%5C",
+                "type": "rich_text",
+                "rich_text": []
+            },
+            "Created At": {
+                "id": "%7B%3Ai%60",
+                "type": "date",
+                "date": None
             },
             "Name": {
                 "id": "title",
@@ -205,7 +225,7 @@ def createPage(databaseId, headers, comment_info):
                     {
                         "type": "text",
                         "text": {
-                            "content": comment_info['text'],
+                            "content": "Card 2",
                             "link": None
                         },
                         "annotations": {
@@ -216,7 +236,7 @@ def createPage(databaseId, headers, comment_info):
                             "code": False,
                             "color": "default"
                         },
-                        "plain_text": comment_info['text'],
+                        "plain_text": "Card 2",
                         "href": None
                     }
                 ]
