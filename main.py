@@ -125,6 +125,25 @@ def get_comments(stream):
     return comments
 #--------------------------
 
+#get user info
+def get_user_info(authorId):
+    query = gql(
+        """{
+        user(id: \""""
+        + authorId + 
+        """\") {
+            name
+            }
+        }"""
+    )
+    # try:
+    #     user_name = client.execute_query(query=query)
+    #     return str(user_name['name'])
+    # except:
+    #     return authorId
+    user_name = client.execute_query(query=query)
+    return user_name['user']['name']
+
 #--------------------------
 #💬COMMENTS 💬
 #💬Get Comments From Stream💬
@@ -181,7 +200,7 @@ def retrieveDatabase(databaseId, headers):
     return res , data
 
 # Create a Page 📄
-def createPage(databaseId, headers, comment_info):
+def createPage(databaseId, headers, comment_info, author):
     url = "https://api.notion.com/v1/pages"
     payload = {
         "parent": {
@@ -192,12 +211,48 @@ def createPage(databaseId, headers, comment_info):
             "Author Id": {
                 "id": "%3Dazv",
                 "type": "rich_text",
-                "rich_text": []
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": author,
+                            "link": None
+                        },
+                        "annotations": {
+                            "bold": False,
+                            "italic": False,
+                            "strikethrough": False,
+                            "underline": False,
+                            "code": False,
+                            "color": "default"
+                        },
+                        "plain_text": author,
+                        "href": None
+                    }
+                ]
             },
             "Id": {
                 "id": "Ker%7B",
                 "type": "rich_text",
-                "rich_text": []
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": comment_info['id'],
+                            "link": None
+                        },
+                        "annotations": {
+                            "bold": False,
+                            "italic": False,
+                            "strikethrough": False,
+                            "underline": False,
+                            "code": False,
+                            "color": "default"
+                        },
+                        "plain_text": comment_info['id'],
+                        "href": None
+                    }
+                ]
             },
             "Status": {
                 "id": "VlA%5B",
@@ -216,7 +271,9 @@ def createPage(databaseId, headers, comment_info):
             "Created At": {
                 "id": "%7B%3Ai%60",
                 "type": "date",
-                "date": None
+                "date": {
+                    "start": comment_info['createdAt']
+                }
             },
             "Name": {
                 "id": "title",
@@ -225,7 +282,7 @@ def createPage(databaseId, headers, comment_info):
                     {
                         "type": "text",
                         "text": {
-                            "content": "Card 2",
+                            "content": comment_info['text'],
                             "link": None
                         },
                         "annotations": {
@@ -236,7 +293,7 @@ def createPage(databaseId, headers, comment_info):
                             "code": False,
                             "color": "default"
                         },
-                        "plain_text": "Card 2",
+                        "plain_text": comment_info['text'],
                         "href": None
                     }
                 ]
@@ -252,7 +309,8 @@ def createPage(databaseId, headers, comment_info):
     st.write(response.text)
 
 for com in comment_info_list:
-    createPage(databaseId=notion_db_id, headers=headers, comment_info=com)
+    user = get_user_info(com['authorId'])
+    createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
 #n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
 #st.write(n_db_data['results'][0])
 #--------------------------
