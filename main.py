@@ -13,6 +13,7 @@ import json
 import requests
 #pandas for dealing with dictionaries
 import pandas as pd
+import base64
 #--------------------------
 
 #--------------------------
@@ -130,7 +131,16 @@ def get_comments(stream):
 comments = get_comments(stream=stream)
 
 #Show Comments
-n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
+#n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
+sc_result = str(comments['comments']['items'][0]['screenshot'])
+sc_base64 = sc_result.split(',')[1]
+n_page_cover = base64.urlsafe_b64decode(sc_base64)
+
+comment_info_list = comments['comments']['items']
+
+
+#cover_url = base64.urlsafe_b64decode(screenshot_b64)
+#n_page_cover = st.write(cover_url)
 #--------------------------#--------------------------#--------------------------#--------------------------
 
 #--------------------------#--------------------------#--------------------------#--------------------------
@@ -171,7 +181,7 @@ def retrieveDatabase(databaseId, headers):
     return res , data
 
 # Create a Page 📄
-def createPage(databaseId, headers):
+def createPage(databaseId, headers, comment_info):
     url = "https://api.notion.com/v1/pages"
     payload = {
         "parent": {
@@ -195,7 +205,7 @@ def createPage(databaseId, headers):
                     {
                         "type": "text",
                         "text": {
-                            "content": "Created via Python",
+                            "content": comment_info['text'],
                             "link": None
                         },
                         "annotations": {
@@ -206,22 +216,23 @@ def createPage(databaseId, headers):
                             "code": False,
                             "color": "default"
                         },
-                        "plain_text": "Created via Python",
+                        "plain_text": comment_info['text'],
                         "href": None
                     }
                 ]
             }
         },
-        "cover": {
-        "type": "external",
-        "external": {"url": n_page_cover }
-        }
+        # "cover": {
+        # "type": "external",
+        # "external": {"url": n_page_cover }
+        # }
     }
 
     response = requests.post(url, json=payload, headers=headers)
     st.write(response.text)
 
-createPage(databaseId=notion_db_id, headers=headers)
+for com in comment_info_list:
+    createPage(databaseId=notion_db_id, headers=headers, comment_info=com)
 #n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
 #st.write(n_db_data['results'][0])
 #--------------------------
