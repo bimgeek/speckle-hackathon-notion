@@ -136,30 +136,16 @@ def get_user_info(authorId):
             }
         }"""
     )
-    # try:
-    #     user_name = client.execute_query(query=query)
-    #     return str(user_name['name'])
-    # except:
-    #     return authorId
-    user_name = client.execute_query(query=query)
-    return user_name['user']['name']
+
+    try:
+        user_name = client.execute_query(query=query)
+        return user_name['user']['name']
+    except:
+        return authorId
+#--------------------------
 
 #--------------------------
-#💬COMMENTS 💬
-#💬Get Comments From Stream💬
-comments = get_comments(stream=stream)
 
-#Show Comments
-#n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
-sc_result = str(comments['comments']['items'][0]['screenshot'])
-sc_base64 = sc_result.split(',')[1]
-n_page_cover = base64.urlsafe_b64decode(sc_base64)
-
-comment_info_list = comments['comments']['items']
-
-
-#cover_url = base64.urlsafe_b64decode(screenshot_b64)
-#n_page_cover = st.write(cover_url)
 #--------------------------#--------------------------#--------------------------#--------------------------
 
 #--------------------------#--------------------------#--------------------------#--------------------------
@@ -168,7 +154,7 @@ comment_info_list = comments['comments']['items']
 with notion_inputs:
     st.subheader('Notion ⬛')
     notion_token = st.text_input('Notion Integration Token', 'secret_P6HNSC8hX5gaQVkLSm5XlzR1KD61OMJDltOnVPWEE3Z', help='Learn how to get your Notion Token')
-    notion_db_id = st.text_input('Database Id 🆔', '22fd1e9048ec4f7fbf7e1695822a1181', help='Learn more about how to get your database id')
+    notion_db_id = st.text_input('Database Id 🆔', '26d224183bfc488181a37cd2d74be1bf', help='Learn more about how to get your database id')
 #--------------------------
 
 #--------------------------
@@ -192,16 +178,18 @@ def queryDatabase(databaseId, headers):
     data = res.json()
     return res , data
 
-# Database retrieve
-def retrieveDatabase(databaseId, headers):
-    url = f"https://api.notion.com/v1/databases/{databaseId}"
-    res = requests.request("GET", url, headers=headers)
-    data = res.json()
-    return res , data
+# Get list of Issues already in Notion
+def getExistingIssueIds(jsonData):
+    existingIssuesIds = dict()
+    pages = jsonData['results']
+    for p in pages:
+        id_obj = p['properties']['Id']
+        id = id_obj['rich_text'][0]['plain_text']
+        existingIssuesIds[id] = p['id']
+    return existingIssuesIds
 
-# Create a Page 📄
-def createPage(databaseId, headers, comment_info, author):
-    url = "https://api.notion.com/v1/pages"
+# Define page layout
+def definePage(databaseId, comment_info, author):
     payload = {
         "parent": {
         "type": "database_id",
@@ -304,13 +292,53 @@ def createPage(databaseId, headers, comment_info, author):
         # "external": {"url": n_page_cover }
         # }
     }
+    return payload
+
+# Create a Page 📄
+def createPage(databaseId, headers, comment_info, author):
+    url = "https://api.notion.com/v1/pages"
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author)
 
     response = requests.post(url, json=payload, headers=headers)
-    st.write(response.text)
+    st.write('Create comment: ' + comment_info['id'])
+    #st.write(response.text)
 
+# Update a Page 📄
+def updatePage(databaseId, headers, comment_info, author, page_id):
+    url = f"https://api.notion.com/v1/pages/{page_id}"
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author)
+    
+    response = requests.patch(url, json=payload, headers=headers)
+    st.write('Update comment: ' + comment_info['id'])
+    #st.write(response.text)
+
+
+#💬COMMENTS 💬
+#💬Get Comments From Stream💬
+comments = get_comments(stream=stream)
+comment_info_list = comments['comments']['items']
+
+#TODO: Get screenshot
+#n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
+# sc_result = str(comments['comments']['items'][0]['screenshot'])
+# sc_base64 = sc_result.split(',')[1]
+# n_page_cover = base64.urlsafe_b64decode(sc_base64)
+
+# Get pages already in Notion database
+res, jsonData = queryDatabase(databaseId=notion_db_id, headers=headers)
+
+# Get Ids of existing issues and pages
+issueIds = getExistingIssueIds(jsonData)
+st.write('Number of comments: ' + str(len(comment_info_list)))
+
+# Go through comment list from Speckle
+# If comment already in Notion then update else create new
 for com in comment_info_list:
     user = get_user_info(com['authorId'])
-    createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
+    if com['id'] in issueIds:
+        updatePage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user, page_id=issueIds[com['id']])
+    else:
+        createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
 #n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
 #st.write(n_db_data['results'][0])
 #--------------------------
