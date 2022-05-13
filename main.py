@@ -130,7 +130,8 @@ def get_comments(stream):
 comments = get_comments(stream=stream)
 
 #Show Comments
-n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
+n_page_cover = comments['comments']['items'][0]['screenshot']
+#st.write(n_page_cover)
 #--------------------------#--------------------------#--------------------------#--------------------------
 
 #--------------------------#--------------------------#--------------------------#--------------------------
@@ -179,14 +180,34 @@ def createPage(databaseId, headers):
         "database_id": databaseId
         },
         "properties": {
+            "Author Id": {
+                "id": "%3Dazv",
+                "type": "rich_text",
+                "rich_text": []
+            },
+            "Id": {
+                "id": "Ker%7B",
+                "type": "rich_text",
+                "rich_text": []
+            },
             "Status": {
-                "id": "_o%3Df",
+                "id": "VlA%5B",
                 "type": "select",
                 "select": {
                     "id": "1",
                     "name": "Not started",
                     "color": "red"
                 }
+            },
+            "Camera Position": {
+                "id": "xd%3C%5C",
+                "type": "rich_text",
+                "rich_text": []
+            },
+            "Created At": {
+                "id": "%7B%3Ai%60",
+                "type": "date",
+                "date": None
             },
             "Name": {
                 "id": "title",
@@ -195,7 +216,7 @@ def createPage(databaseId, headers):
                     {
                         "type": "text",
                         "text": {
-                            "content": "Created via Python",
+                            "content": "Card 2",
                             "link": None
                         },
                         "annotations": {
@@ -206,7 +227,7 @@ def createPage(databaseId, headers):
                             "code": False,
                             "color": "default"
                         },
-                        "plain_text": "Created via Python",
+                        "plain_text": "Card 2",
                         "href": None
                     }
                 ]
@@ -214,7 +235,7 @@ def createPage(databaseId, headers):
         },
         "cover": {
         "type": "external",
-        "external": {"url": n_page_cover }
+        "external": {"url": n_page_cover}
         }
     }
 
@@ -222,7 +243,7 @@ def createPage(databaseId, headers):
     st.write(response.text)
 
 createPage(databaseId=notion_db_id, headers=headers)
-#n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
-#st.write(n_db_data['results'][0])
+n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
+st.write(n_db_data['results'])
 #--------------------------
 #--------------------------#--------------------------#--------------------------#--------------------------
