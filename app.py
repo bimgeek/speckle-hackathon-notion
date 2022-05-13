@@ -13,7 +13,7 @@ import json
 import requests
 #pandas for dealing with dictionaries
 import pandas as pd
-import base64
+from imageHandler import uploadImage, downloadImage
 #--------------------------
 
 #--------------------------
@@ -210,7 +210,7 @@ def getExistingIssueIds(jsonData):
 
 
 # Define page layout
-def definePage(databaseId, comment_info, author, status_name, status_color):
+def definePage(databaseId, comment_info, author, status_name, status_color, img_url):
     payload = {
         "parent": {
         "type": "database_id",
@@ -308,17 +308,20 @@ def definePage(databaseId, comment_info, author, status_name, status_color):
                 ]
             }
         },
-        # "cover": {
-        # "type": "external",
-        # "external": {"url": n_page_cover }
-        # }
+        "cover": {
+        "type": "external",
+        "external": {"url": img_url }
+        }
     }
     return payload
 
 # Create a Page 📄
 def createPage(databaseId, headers, comment_info, author):
     url = "https://api.notion.com/v1/pages"
-    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name='Not started', status_color='red')
+
+    img_path = downloadImage(img_string=comment_info['screenshot'], img_name=comment_info['id'])
+    image = uploadImage(img_path=img_path)
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name='Not started', status_color='red', img_url=image['link'])
 
     response = requests.post(url, json=payload, headers=headers)
     st.write('Create comment: ' + comment_info['id'])
@@ -327,7 +330,7 @@ def createPage(databaseId, headers, comment_info, author):
 # Update a Page 📄
 def updatePage(databaseId, headers, comment_info, author, page_info):
     url = f"https://api.notion.com/v1/pages/{page_info[0]}"
-    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name=page_info[1], status_color=page_info[2])
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name=page_info[1], status_color=page_info[2], img_url=None)
     
     response = requests.patch(url, json=payload, headers=headers)
     st.write('Update comment: ' + comment_info['id'])
@@ -338,12 +341,6 @@ def updatePage(databaseId, headers, comment_info, author, page_info):
 #💬Get Comments From Stream💬
 comments = get_comments(stream=stream)
 comment_info_list = comments['comments']['items']
-
-#TODO: Get screenshot
-n_page_cover = comments['comments']['items'][0]['screenshot']
-# sc_result = str(comments['comments']['items'][0]['screenshot'])
-# sc_base64 = sc_result.split(',')[1]
-# n_page_cover = base64.urlsafe_b64decode(sc_base64)
 
 # Get pages already in Notion database
 res, jsonData = queryDatabase(databaseId=notion_db_id, headers=headers)
