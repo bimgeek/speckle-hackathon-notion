@@ -91,7 +91,7 @@ with speckle_inputs:
     #✅SELECTED STREAM ✅
     stream = client.stream.search(sName)[0]
     #Stream Branches 🌴
-    #branches = client.branch.list(stream.id)
+    #branches = client.branch.list()
     #Stream Commits 🏹
     #commits = client.commit.list(stream.id, limit=100)
     #-------
@@ -144,6 +144,23 @@ def get_user_info(authorId):
         return authorId
 #--------------------------
 
+# archive comment
+def archiveSpeckleComment(streamId, commentId):
+    query = gql(
+        """mutation {
+            commentArchive(
+                streamId:\""""
+                + streamId + 
+                """\"
+                commentId:\""""
+                + commentId + 
+                """\"
+                archived:true)
+            }"""
+    )
+    client.execute_query(query)
+    st.write('Archive comment: ' + commentId)
+    
 #--------------------------
 
 #--------------------------#--------------------------#--------------------------#--------------------------
@@ -183,13 +200,17 @@ def getExistingIssueIds(jsonData):
     existingIssuesIds = dict()
     pages = jsonData['results']
     for p in pages:
-        id_obj = p['properties']['Id']
-        id = id_obj['rich_text'][0]['plain_text']
-        existingIssuesIds[id] = p['id']
+        props = p['properties']
+        id = props['Id']['rich_text'][0]['plain_text']
+        issue_id = p['id']
+        status_name = props['Status']['select']['name']
+        status_color = props['Status']['select']['color']
+        existingIssuesIds[id] = (issue_id, status_name, status_color)
     return existingIssuesIds
 
+
 # Define page layout
-def definePage(databaseId, comment_info, author):
+def definePage(databaseId, comment_info, author, status_name, status_color):
     payload = {
         "parent": {
         "type": "database_id",
@@ -247,8 +268,8 @@ def definePage(databaseId, comment_info, author):
                 "type": "select",
                 "select": {
                     "id": "1",
-                    "name": "Not started",
-                    "color": "red"
+                    "name": status_name,
+                    "color": status_color
                 }
             },
             "Camera Position": {
@@ -297,16 +318,16 @@ def definePage(databaseId, comment_info, author):
 # Create a Page 📄
 def createPage(databaseId, headers, comment_info, author):
     url = "https://api.notion.com/v1/pages"
-    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author)
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name='Not started', status_color='red')
 
     response = requests.post(url, json=payload, headers=headers)
     st.write('Create comment: ' + comment_info['id'])
     #st.write(response.text)
 
 # Update a Page 📄
-def updatePage(databaseId, headers, comment_info, author, page_id):
-    url = f"https://api.notion.com/v1/pages/{page_id}"
-    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author)
+def updatePage(databaseId, headers, comment_info, author, page_info):
+    url = f"https://api.notion.com/v1/pages/{page_info[0]}"
+    payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name=page_info[1], status_color=page_info[2])
     
     response = requests.patch(url, json=payload, headers=headers)
     st.write('Update comment: ' + comment_info['id'])
@@ -336,7 +357,10 @@ st.write('Number of comments: ' + str(len(comment_info_list)))
 for com in comment_info_list:
     user = get_user_info(com['authorId'])
     if com['id'] in issueIds:
-        updatePage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user, page_id=issueIds[com['id']])
+        if issueIds[com['id']][1] == 'Archived':
+            archiveSpeckleComment(streamId=stream.id, commentId=com['id'])
+        else:
+            updatePage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user, page_info=issueIds[com['id']])
     else:
         createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
 #n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
