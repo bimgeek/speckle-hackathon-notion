@@ -29,7 +29,7 @@ st.set_page_config(
 header = st.container()
 speckle_inputs = st.container()
 notion_inputs = st.container()
-report = st.container()
+run = st.container()
 graphs = st.container()
 #--------------------------
 
@@ -37,26 +37,7 @@ graphs = st.container()
 #HEADER
 #Page Header
 with header:
-    st.title("Speckle Comments - Notion Integration 💬")
-#About info
-with header.expander("About this app🔽", expanded=True):
-    st.markdown(
-        """*Description will be updated.*
-        Speckle Hackathon project. Our main goal was to create a  link between Speckle and Notion.
-        Speckle comments are limited at the moment and Notion is really flexible to assign attributes to page objects.
-        Maybe Notion can be used to track Speckle Comments?
-        """
-    )
-    st.markdown(
-        """
-        ###### How to use it
-        """
-    )
-    st.markdown(
-        """
-        video/text explaining how to use the app.
-        """
-    )
+    st.title("App 💬")
 #--------------------------
 
 #--------------------------#--------------------------#--------------------------#--------------------------
@@ -169,9 +150,16 @@ def archiveSpeckleComment(streamId, commentId):
 #--------------------------
 # NOTION ⬛ INPUTS
 with notion_inputs:
-    st.subheader('Notion ⬛')
+    st.subheader('Notion📄')
     notion_token = st.text_input('Notion Integration Token', 'secret_P6HNSC8hX5gaQVkLSm5XlzR1KD61OMJDltOnVPWEE3Z', help='Learn how to get your Notion Token')
     notion_db_id = st.text_input('Database Id 🆔', '26d224183bfc488181a37cd2d74be1bf', help='Learn more about how to get your database id')
+#--------------------------
+
+#--------------------------
+#RUN BUTTON 🏃‍♂️💨
+#if button clicked run app otherwise don't
+with run:
+    run_app = st.button("RUN 🚀")
 #--------------------------
 
 #--------------------------
@@ -336,31 +324,31 @@ def updatePage(databaseId, headers, comment_info, author, page_info):
     st.write('Update comment: ' + comment_info['id'])
     #st.write(response.text)
 
+if run_app:
+    #💬COMMENTS 💬
+    #💬Get Comments From Stream💬
+    comments = get_comments(stream=stream)
+    comment_info_list = comments['comments']['items']
 
-#💬COMMENTS 💬
-#💬Get Comments From Stream💬
-comments = get_comments(stream=stream)
-comment_info_list = comments['comments']['items']
+    # Get pages already in Notion database
+    res, jsonData = queryDatabase(databaseId=notion_db_id, headers=headers)
 
-# Get pages already in Notion database
-res, jsonData = queryDatabase(databaseId=notion_db_id, headers=headers)
+    # Get Ids of existing issues and pages
+    issueIds = getExistingIssueIds(jsonData)
+    st.write('Number of comments: ' + str(len(comment_info_list)))
 
-# Get Ids of existing issues and pages
-issueIds = getExistingIssueIds(jsonData)
-st.write('Number of comments: ' + str(len(comment_info_list)))
-
-# Go through comment list from Speckle
-# If comment already in Notion then update else create new
-for com in comment_info_list:
-    user = get_user_info(com['authorId'])
-    if com['id'] in issueIds:
-        if issueIds[com['id']][1] == 'Archived':
-            archiveSpeckleComment(streamId=stream.id, commentId=com['id'])
+    # Go through comment list from Speckle
+    # If comment already in Notion then update else create new
+    for com in comment_info_list:
+        user = get_user_info(com['authorId'])
+        if com['id'] in issueIds:
+            if issueIds[com['id']][1] == 'Archived':
+                archiveSpeckleComment(streamId=stream.id, commentId=com['id'])
+            else:
+                updatePage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user, page_info=issueIds[com['id']])
         else:
-            updatePage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user, page_info=issueIds[com['id']])
-    else:
-        createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
-#n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
-#st.write(n_db_data['results'][0])
-#--------------------------
-#--------------------------#--------------------------#--------------------------#--------------------------
+            createPage(databaseId=notion_db_id, headers=headers, comment_info=com, author=user)
+    #n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
+    #st.write(n_db_data['results'][0])
+    #--------------------------
+    #--------------------------#--------------------------#--------------------------#--------------------------
