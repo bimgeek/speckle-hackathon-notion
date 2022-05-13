@@ -1,7 +1,19 @@
+#--------------------------
+# IMPORT LIBRARIES
+# Streamlit for UI
+import streamlit as st
+#Gql for GraphQL queries
 from gql import gql
+#SpecklePy stuff
 from specklepy.api.credentials import get_account_from_token
 from specklepy.api.client import SpeckleClient
-import streamlit as st
+#json when dealing with received objects
+import json
+# Notion API requests
+import requests
+#pandas for dealing with dictionaries
+import pandas as pd
+#--------------------------
 
 #--------------------------
 #PAGE CONFIG
@@ -14,8 +26,8 @@ st.set_page_config(
 #--------------------------
 #CONTAINERS
 header = st.container()
-input = st.container()
-viewer = st.container()
+speckle_inputs = st.container()
+notion_inputs = st.container()
 report = st.container()
 graphs = st.container()
 #--------------------------
@@ -28,17 +40,28 @@ with header:
 #About info
 with header.expander("About this app🔽", expanded=True):
     st.markdown(
-        """Speckle Hackathon project. Our main was to create a bidirectional link with Speckle and Notion.
+        """*Description will be updated.*
+        Speckle Hackathon project. Our main goal was to create a  link between Speckle and Notion.
         Speckle comments are limited at the moment and Notion is really flexible to assign attributes to page objects.
         Maybe Notion can be used to track Speckle Comments?
         """
     )
+    st.markdown(
+        """
+        ###### How to use it
+        """
+    )
+    st.markdown(
+        """
+        video/text explaining how to use the app.
+        """
+    )
 #--------------------------
 
-#--------------------------
-#INPUTS
-with input:
-    st.subheader("Inputs")
+#--------------------------#--------------------------#--------------------------#--------------------------
+#🔹SPECKLE INPUTS
+with speckle_inputs:
+    st.subheader("🔹Speckle")
 
     #-------
     #Columns for inputs
@@ -62,35 +85,144 @@ with input:
     streams = client.stream.list()
     #Get Stream Names
     streamNames = [s.name for s in streams]
-    #Dropdown for stream selection
+    #🔽DROPDOWN for stream selection🔽
     sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
-    #SELECTED STREAM ✅
+    #✅SELECTED STREAM ✅
     stream = client.stream.search(sName)[0]
     #Stream Branches 🌴
-    branches = client.branch.list(stream.id)
+    #branches = client.branch.list(stream.id)
     #Stream Commits 🏹
-    commits = client.commit.list(stream.id, limit=100)
+    #commits = client.commit.list(stream.id, limit=100)
     #-------
 #--------------------------
 
 #--------------------------
-#Query code for receiving comments
-query = gql(
-    """
-    query{comments(streamId:\""""
-    + stream.id + 
-    """\") {
-    items {
-    id
-    authorId
-    text
-    data
-    archived
-    screenshot}}}
-    """
-)
-# Making query to Speckle
-gql_result = client.execute_query(query=query)
+#CACHE
+@st.cache
+
+# Function for receiving comments🛠
+def get_comments(stream):
+    query = gql(
+        """{
+        comments(streamId:\""""
+        + stream.id + 
+        """\") {
+            items {
+            text
+            id
+            authorId
+            createdAt
+            data
+            archived
+            screenshot
+            }
+        }
+        }"""
+    )
+    # Making query to Speckle
+    comments = client.execute_query(query=query)
+    return comments
 #--------------------------
 
-st.write(gql_result)
+#--------------------------
+#💬COMMENTS 💬
+#💬Get Comments From Stream💬
+comments = get_comments(stream=stream)
+
+#Show Comments
+n_page_cover = st.write(comments['comments']['items'][0]['screenshot'])
+#--------------------------#--------------------------#--------------------------#--------------------------
+
+#--------------------------#--------------------------#--------------------------#--------------------------
+#--------------------------
+# NOTION ⬛ INPUTS
+with notion_inputs:
+    st.subheader('Notion ⬛')
+    notion_token = st.text_input('Notion Integration Token', 'secret_P6HNSC8hX5gaQVkLSm5XlzR1KD61OMJDltOnVPWEE3Z', help='Learn how to get your Notion Token')
+    notion_db_id = st.text_input('Database Id 🆔', '22fd1e9048ec4f7fbf7e1695822a1181', help='Learn more about how to get your database id')
+#--------------------------
+
+#--------------------------
+#HEADERS
+headers = {
+    "Accept": "application/json",
+    "Notion-Version": "2022-02-22",
+    "Content-Type": "application/json",
+    "Authorization": "Bearer "+notion_token
+}
+#--------------------------
+
+#--------------------------
+#🔨NOTION FUNCTIONS 🔨
+#CACHE NOTION
+#@st.cache
+# Database Query
+def queryDatabase(databaseId, headers):
+    url = f"https://api.notion.com/v1/databases/{databaseId}/query"
+    res = requests.request("POST", url, headers=headers)
+    data = res.json()
+    return res , data
+
+# Database retrieve
+def retrieveDatabase(databaseId, headers):
+    url = f"https://api.notion.com/v1/databases/{databaseId}"
+    res = requests.request("GET", url, headers=headers)
+    data = res.json()
+    return res , data
+
+# Create a Page 📄
+def createPage(databaseId, headers):
+    url = "https://api.notion.com/v1/pages"
+    payload = {
+        "parent": {
+        "type": "database_id",
+        "database_id": databaseId
+        },
+        "properties": {
+            "Status": {
+                "id": "_o%3Df",
+                "type": "select",
+                "select": {
+                    "id": "1",
+                    "name": "Not started",
+                    "color": "red"
+                }
+            },
+            "Name": {
+                "id": "title",
+                "type": "title",
+                "title": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": "Created via Python",
+                            "link": None
+                        },
+                        "annotations": {
+                            "bold": False,
+                            "italic": False,
+                            "strikethrough": False,
+                            "underline": False,
+                            "code": False,
+                            "color": "default"
+                        },
+                        "plain_text": "Created via Python",
+                        "href": None
+                    }
+                ]
+            }
+        },
+        "cover": {
+        "type": "external",
+        "external": {"url": n_page_cover }
+        }
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    st.write(response.text)
+
+createPage(databaseId=notion_db_id, headers=headers)
+#n_db_res, n_db_data = queryDatabase(databaseId=notion_db_id, headers=headers)
+#st.write(n_db_data['results'][0])
+#--------------------------
+#--------------------------#--------------------------#--------------------------#--------------------------
