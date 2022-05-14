@@ -1,3 +1,5 @@
+![](https://github.com/bimgeek/speckle-hackathon-notion/blob/main/app-logo.png)
+
 # **Speckle Comments 💬 to Notion📄**
 
 - About this app🔽
@@ -40,7 +42,7 @@ In **Notion** you can track and update the comment and when the comments is R 
 
 You can also take a look at the video below👇
 
-[![Watch the video](https://img.youtube.com/vi/WQoxlD1S3p4/default.jpg)](https://youtu.be/WQoxlD1S3p4)
+![](https://i3.ytimg.com/vi/WQoxlD1S3p4/maxresdefault.jpg)
 
 ****Technologies Used 🤓****
 
