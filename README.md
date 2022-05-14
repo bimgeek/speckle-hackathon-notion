@@ -42,7 +42,7 @@ In **Notion** you can track and update the comment and when the comments is R 
 
 You can also take a look at the video below👇
 
-![](https://i3.ytimg.com/vi/WQoxlD1S3p4/maxresdefault.jpg)
+[![](https://i3.ytimg.com/vi/WQoxlD1S3p4/maxresdefault.jpg)](https://youtu.be/WQoxlD1S3p4)
 
 ****Technologies Used 🤓****
 
