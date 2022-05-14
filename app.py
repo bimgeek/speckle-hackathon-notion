@@ -11,17 +11,8 @@ from specklepy.api.client import SpeckleClient
 import json
 # Notion API requests
 import requests
-#pandas for dealing with dictionaries
-import pandas as pd
+#imagehandler to upload image as url to notion
 from imageHandler import uploadImage, downloadImage
-#--------------------------
-
-#--------------------------
-#PAGE CONFIG
-st.set_page_config(
-    page_title="Speckle Comments to Notion",
-    page_icon="💬"
-)
 #--------------------------
 
 #--------------------------
@@ -30,7 +21,6 @@ header = st.container()
 speckle_inputs = st.container()
 notion_inputs = st.container()
 run = st.container()
-graphs = st.container()
 #--------------------------
 
 #--------------------------
@@ -43,7 +33,7 @@ with header:
 #--------------------------#--------------------------#--------------------------#--------------------------
 #🔹SPECKLE INPUTS
 with speckle_inputs:
-    st.subheader("🔹Speckle")
+    st.subheader("Speckle🔹")
 
     #-------
     #Columns for inputs
@@ -71,10 +61,6 @@ with speckle_inputs:
     sName = st.selectbox(label="Select your stream", options=streamNames, help="Select your stream from the dropdown")
     #✅SELECTED STREAM ✅
     stream = client.stream.search(sName)[0]
-    #Stream Branches 🌴
-    #branches = client.branch.list()
-    #Stream Commits 🏹
-    #commits = client.commit.list(stream.id, limit=100)
     #-------
 #--------------------------
 
@@ -95,6 +81,9 @@ def get_comments(stream):
             authorId
             createdAt
             data
+            resources{
+                resourceId
+            }
             archived
             screenshot
             }
@@ -144,9 +133,6 @@ def archiveSpeckleComment(streamId, commentId):
     
 #--------------------------
 
-#--------------------------#--------------------------#--------------------------#--------------------------
-
-#--------------------------#--------------------------#--------------------------#--------------------------
 #--------------------------
 # NOTION ⬛ INPUTS
 with notion_inputs:
@@ -199,7 +185,21 @@ def getExistingIssueIds(jsonData):
 
 # Define page layout
 def definePage(databaseId, comment_info, author, status_name, status_color, img_url):
+    camPos = ",".join([str(pos) for pos in [comment_info["data"]["camPos"]]])
+    commitURL = comment_info["resources"][0]["resourceId"]
+    embedUrl = f"https://speckle.xyz/embed?stream={stream.id}&commit={commitURL}&c={camPos}"
     payload = {
+        "children":[{
+            "object": "block",
+            "id": "a7e10d37-4652-4573-a62a-3f3b3a2a648f",
+            "has_children": False,
+            "archived": False,
+            "type": "embed",
+            "embed": {
+                "caption": [],
+                "url": embedUrl
+            }
+            }],
         "parent": {
         "type": "database_id",
         "database_id": databaseId
@@ -263,7 +263,25 @@ def definePage(databaseId, comment_info, author, status_name, status_color, img_
             "Camera Position": {
                 "id": "xd%3C%5C",
                 "type": "rich_text",
-                "rich_text": []
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": camPos,
+                            "link": None
+                        },
+                        "annotations": {
+                            "bold": False,
+                            "italic": False,
+                            "strikethrough": False,
+                            "underline": False,
+                            "code": False,
+                            "color": "default"
+                        },
+                        "plain_text": camPos,
+                        "href": None
+                    }
+                ]
             },
             "Created At": {
                 "id": "%7B%3Ai%60",
@@ -300,6 +318,7 @@ def definePage(databaseId, comment_info, author, status_name, status_color, img_
         "type": "external",
         "external": {"url": img_url }
         }
+            
     }
     return payload
 
