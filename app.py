@@ -175,7 +175,12 @@ def getExistingIssueIds(jsonData):
     pages = jsonData['results']
     for p in pages:
         props = p['properties']
-        id = props['Id']['rich_text'][0]['plain_text']
+        # If existing page doesn't contain an Id just skip
+        try:
+            id = props['Id']['rich_text'][0]['plain_text']
+        except:
+            continue
+
         issue_id = p['id']
         status_name = props['Status']['select']['name']
         status_color = props['Status']['select']['color']
@@ -185,9 +190,14 @@ def getExistingIssueIds(jsonData):
 
 # Define page layout
 def definePage(databaseId, comment_info, author, status_name, status_color, img_url):
+    # Join cam postion into comma separated string
     camPos = ",".join([str(pos) for pos in [comment_info["data"]["camPos"]]])
+
+    # Construct embed link
     commitURL = comment_info["resources"][0]["resourceId"]
     embedUrl = f"https://speckle.xyz/embed?stream={stream.id}&commit={commitURL}&c={camPos}"
+
+    # define page payload
     payload = {
         "children":[{
             "object": "block",
@@ -331,7 +341,7 @@ def createPage(databaseId, headers, comment_info, author):
     payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name='Not started', status_color='red', img_url=image['link'])
 
     response = requests.post(url, json=payload, headers=headers)
-    st.write('Create comment: ' + comment_info['id'])
+    st.write('Created comment: ' + comment_info['id'])
     #st.write(response.text)
 
 # Update a Page 📄
@@ -340,7 +350,7 @@ def updatePage(databaseId, headers, comment_info, author, page_info):
     payload = definePage(databaseId=databaseId, comment_info=comment_info, author=author, status_name=page_info[1], status_color=page_info[2], img_url=None)
     
     response = requests.patch(url, json=payload, headers=headers)
-    st.write('Update comment: ' + comment_info['id'])
+    st.write('Updated comment: ' + comment_info['id'])
     #st.write(response.text)
 
 if run_app:
