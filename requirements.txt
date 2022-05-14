@@ -1,0 +1,6 @@
+gql==3.2.0
+imgurpython==1.1.7
+Pillow==9.1.0
+requests==2.27.1
+specklepy==2.6.7
+streamlit==1.9.0
